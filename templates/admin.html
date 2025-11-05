@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body style="background-color: hsl(0, 0%, 96%); min-height: 100vh;">
+    <section class="">
+        <div class="px-4 py-5 px-md-5" style="min-height: 100vh;">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center mb-5">
+                    <h1 class="display-4 fw-bold">
+                        Panneau <span class="text-primary">d'Administration</span>
+                    </h1>
+                    <div>
+                        <a href="/dashboard" class="btn btn-secondary me-2">Retour</a>
+                        <form method="POST" action="/logout" class="d-inline">
+                            <button type="submit" class="btn btn-danger">Déconnexion</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="row gx-lg-5">
+                    <div class="col-lg-6 mb-5 mb-lg-0">
+                        <div class="card">
+                            <div class="card-body py-5 px-md-5">
+                                <h3 class="mb-4">Créer un utilisateur</h3>
+                                <form id="createUserForm">
+                                    <div class="mb-4">
+                                        <label class="form-label" for="username">Nom d'utilisateur</label>
+                                        <input type="text" id="username" name="username" class="form-control" required>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label" for="password">Mot de passe</label>
+                                        <input type="password" id="password" name="password" class="form-control" required>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label" for="email">Email (optionnel)</label>
+                                        <input type="email" id="email" name="email" class="form-control">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label" for="age">Âge (optionnel)</label>
+                                        <input type="number" id="age" name="age" min="13" max="120" class="form-control">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label" for="role">Rôle</label>
+                                        <select id="role" name="role" class="form-select" required>
+                                            <option value="viewer">Viewer</option>
+                                            <option value="editor">Editor</option>
+                                            <option value="admin">Admin</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-block mb-4 w-100">Créer l'utilisateur</button>
+                                </form>
+                                <div id="message"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 mb-5 mb-lg-0">
+                        <div class="card">
+                            <div class="card-body py-5 px-md-5">
+                                <h3 class="mb-4">Logs de sécurité</h3>
+                                <div style="max-height: 600px; overflow-y: auto;">
+                                    <% if (logs.length === 0) { %>
+                                        <p style="color: hsl(217, 10%, 50.8%)">Aucun log disponible.</p>
+                                    <% } else { %>
+                                        <% logs.reverse().forEach(log => { %>
+                                            <div class="alert <%= log.severity === 'CRITICAL' || log.severity === 'ERROR' ? 'alert-danger' : (log.severity === 'WARNING' ? 'alert-warning' : 'alert-success') %> py-2 mb-2">
+                                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                                    <div>
+                                                        <strong><%= log.event_type %></strong>
+                                                        <span class="badge <%= log.severity === 'CRITICAL' || log.severity === 'ERROR' ? 'bg-danger' : (log.severity === 'WARNING' ? 'bg-warning text-dark' : 'bg-success') %> ms-2"><%= log.severity %></span>
+                                                    </div>
+                                                    <small style="color: hsl(217, 10%, 50.8%)"><%= new Date(log.timestamp).toLocaleString('fr-FR') %></small>
+                                                </div>
+                                                <small>
+                                                    <strong>Utilisateur:</strong> <%= log.user %> |
+                                                    <strong>IP:</strong> <%= log.ip_address %>
+                                                    <% if (Object.keys(log.details).length > 0) { %>
+                                                        <br><strong>Détails:</strong> <%= JSON.stringify(log.details) %>
+                                                    <% } %>
+                                                </small>
+                                            </div>
+                                        <% }); %>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                email: document.getElementById('email').value,
+                age: document.getElementById('age').value,
+                role: document.getElementById('role').value
+            };
+
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                const messageDiv = document.getElementById('message');
+
+                if (result.success) {
+                    messageDiv.innerHTML = '<div class="alert alert-success">Utilisateur créé avec succès</div>';
+                    document.getElementById('createUserForm').reset();
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    let errorMsg = result.error || 'Erreur lors de la création';
+                    if (result.errors) {
+                        errorMsg = Object.values(result.errors).join(', ');
+                    }
+                    messageDiv.innerHTML = `<div class="alert alert-danger">${errorMsg}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('message').innerHTML = '<div class="alert alert-danger">Erreur de communication avec le serveur</div>';
+            }
+        });
+    </script>
+</body>
+</html>

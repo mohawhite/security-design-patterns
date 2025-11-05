@@ -1,0 +1,23 @@
+{
+  "name": "security-patterns-app",
+  "version": "1.0.0",
+  "description": "Application web sécurisée avec Design Patterns de sécurité",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "keywords": ["security", "design-patterns", "authentication", "authorization"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "bcrypt": "^5.1.1",
+    "express-rate-limit": "^7.1.5",
+    "ejs": "^3.1.9",
+    "body-parser": "^1.20.2",
+    "sqlite3": "^5.1.7",
+    "dotenv": "^16.3.1"
+  }
+}
