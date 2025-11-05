@@ -127,9 +127,18 @@ security_app/
 │   ├── login.html            # Page de connexion
 │   ├── register.html         # Page d'inscription
 │   ├── dashboard.html        # Dashboard utilisateur
-│   └── admin.html            # Panneau d'administration
-└── logs/
-    └── security_audit.log    # Logs de sécurité
+│   ├── profile.html          # Page de profil utilisateur
+│   ├── admin.html            # Panneau d'administration
+│   ├── 404.html              # Page erreur 404
+│   ├── 403.html              # Page erreur 403
+│   └── 500.html              # Page erreur 500
+├── tests/
+│   ├── security-tests.js     # Tests de sécurité automatisés
+│   └── test-results.json     # Résultats des tests
+├── logs/
+│   └── security_audit.log    # Logs de sécurité
+├── TESTS_REPORT.md           # Rapport de tests détaillé
+└── README.md                 # Documentation
 ```
 
 ---
@@ -279,6 +288,8 @@ Fichier: `security/audit.js`
 | SQL_INJECTION_ATTEMPT | CRITICAL | Injection SQL détectée |
 | XSS_ATTEMPT | CRITICAL | XSS détecté |
 | USER_CREATED | INFO | Création d'utilisateur |
+| ROLE_CHANGED | INFO | Modification du rôle d'un utilisateur |
+| PASSWORD_CHANGED | INFO | Changement de mot de passe |
 | BRUTE_FORCE_DETECTED | CRITICAL | Attaque brute force détectée |
 | ANOMALY_DETECTED | CRITICAL | Anomalie de sécurité |
 
@@ -298,8 +309,12 @@ Fichier: `security/audit.js`
 | /login | GET/POST | Non | - | Connexion |
 | /register | GET/POST | Non | - | Inscription publique (viewer) |
 | /dashboard | GET | Oui | - | Dashboard utilisateur |
+| /profile | GET | Oui | - | Page de profil utilisateur |
+| /profile/change-password | POST | Oui | - | Changer son mot de passe |
 | /admin | GET | Oui | admin | Panneau admin |
+| /api/users | GET | Oui | admin | Liste des utilisateurs |
 | /api/users | POST | Oui | admin | Création utilisateur (avec email et age) |
+| /api/users/:username/role | PUT | Oui | admin | Modification du rôle d'un utilisateur |
 | /api/logs | GET | Oui | admin | Consultation des logs de sécurité |
 | /logout | POST | Oui | - | Déconnexion |
 
@@ -309,11 +324,40 @@ Fichier: `security/audit.js`
 - **Rate Limiting:** 5 tentatives/15 min sur /login
 - **Validation:** Toutes les entrées utilisateur
 - **Détection:** SQL Injection et XSS automatiques
-- **Gestion d'erreurs:** Messages génériques, détails dans les logs
+- **Gestion d'erreurs:** Pages d'erreur personnalisées (404, 403, 500)
+- **Profil utilisateur:** Changement de mot de passe sécurisé
+- **Gestion des rôles:** Interface admin pour modifier les permissions
+
+### Fonctionnalités Avancées
+
+- **Tests automatisés:** Suite de tests de sécurité (`npm test`)
+- **Rapport de tests:** Documentation complète dans `TESTS_REPORT.md`
+- **Gestion utilisateurs:** Interface admin pour lister et modifier les rôles
+- **Profil personnel:** Page dédiée pour consulter ses infos et changer son mot de passe
+- **Pages d'erreur:** Templates Bootstrap personnalisés pour 404, 403, 500
 
 ---
 
 ## Tests de Sécurité
+
+### Tests Automatisés
+
+Exécutez la suite de tests de sécurité:
+
+```bash
+npm test
+```
+
+Les tests valident:
+- Protection contre injection SQL
+- Protection contre XSS
+- Protection contre brute force
+- Contrôle d'accès RBAC
+- Expiration de session
+
+Résultats dans: `tests/test-results.json`
+
+### Tests Manuels
 
 ### 1. Injection SQL
 

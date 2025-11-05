@@ -156,6 +156,57 @@ app.get('/dashboard', authenticationMiddleware, (req, res) => {
     res.render('dashboard', { user: req.user });
 });
 
+app.get('/profile', authenticationMiddleware, async (req, res) => {
+    const db = new (require('./security/database').DatabaseManager)();
+    const userDetails = await db.getUser(req.user.username);
+    res.render('profile', { user: userDetails });
+});
+
+app.post('/profile/change-password', authenticationMiddleware, async (req, res) => {
+    const { current_password, new_password } = req.body;
+    const ipAddress = getClientIp(req);
+
+    const passwordValidation = validator.validateInput(new_password, 'password', ipAddress);
+    if (!passwordValidation.valid) {
+        return res.status(400).json({
+            success: false,
+            error: passwordValidation.error
+        });
+    }
+
+    const authResult = await authEnforcer.authenticate(req.user.username, current_password, ipAddress, { username: req.user.username, password: current_password });
+
+    if (!authResult.success) {
+        return res.status(400).json({
+            success: false,
+            error: 'Mot de passe actuel incorrect'
+        });
+    }
+
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+
+    const db = new (require('./security/database').DatabaseManager)();
+    const result = await db.updateUser(req.user.username, { password: hashedPassword });
+
+    if (!result.success) {
+        return res.status(500).json({
+            success: false,
+            error: 'Erreur lors de la mise à jour'
+        });
+    }
+
+    auditLogger.log({
+        event_type: 'PASSWORD_CHANGED',
+        user: req.user.username,
+        ip_address: ipAddress,
+        severity: 'INFO',
+        details: {}
+    });
+
+    res.json({ success: true, message: 'Mot de passe changé avec succès' });
+});
+
 app.get('/admin', authenticationMiddleware, requirePermission('admin'), (req, res) => {
     const logs = auditLogger.getLogs({ limit: 50 });
     res.render('admin', { user: req.user, logs });
@@ -202,6 +253,12 @@ app.post('/api/users', authenticationMiddleware, requirePermission('admin'), asy
     res.json({ success: true, message: 'Utilisateur créé avec succès' });
 });
 
+app.get('/api/users', authenticationMiddleware, requirePermission('admin'), async (req, res) => {
+    const db = new (require('./security/database').DatabaseManager)();
+    const users = await db.getAllUsers();
+    res.json({ users });
+});
+
 app.get('/api/logs', authenticationMiddleware, requirePermission('admin'), (req, res) => {
     const { event_type, user, severity, limit } = req.query;
 
@@ -213,6 +270,40 @@ app.get('/api/logs', authenticationMiddleware, requirePermission('admin'), (req,
     });
 
     res.json({ logs });
+});
+
+app.put('/api/users/:username/role', authenticationMiddleware, requirePermission('admin'), async (req, res) => {
+    const { username } = req.params;
+    const { role } = req.body;
+    const ipAddress = getClientIp(req);
+
+    const validRoles = ['admin', 'editor', 'viewer'];
+    if (!validRoles.includes(role)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Rôle invalide'
+        });
+    }
+
+    const db = new (require('./security/database').DatabaseManager)();
+    const result = await db.updateUser(username, { role });
+
+    if (!result.success) {
+        return res.status(404).json({
+            success: false,
+            error: 'Utilisateur non trouvé'
+        });
+    }
+
+    auditLogger.log({
+        event_type: 'ROLE_CHANGED',
+        user: req.user.username,
+        ip_address: ipAddress,
+        severity: 'INFO',
+        details: { target_user: username, new_role: role }
+    });
+
+    res.json({ success: true, message: 'Rôle mis à jour avec succès' });
 });
 
 app.post('/logout', authenticationMiddleware, (req, res) => {
@@ -274,6 +365,10 @@ app.post('/register', async (req, res) => {
 });
 
 
+app.use((req, res) => {
+    res.status(404).render('404');
+});
+
 app.use((err, req, res, next) => {
     const ipAddress = getClientIp(req);
 
@@ -288,9 +383,7 @@ app.use((err, req, res, next) => {
         }
     });
 
-    res.status(500).json({
-        error: 'Une erreur interne s\'est produite'
-    });
+    res.status(500).render('500');
 });
 
 app.listen(PORT, () => {

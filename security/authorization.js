@@ -91,14 +91,14 @@ class AuthorizationEnforcer {
 function requirePermission(permission) {
     return function(req, res, next) {
         if (!req.user) {
-            return res.status(401).json({ error: 'Non authentifié' });
+            return res.redirect('/login');
         }
 
         const authEnforcer = new AuthorizationEnforcer();
         const hasPermission = authEnforcer.can_access(req.user, req.path, permission);
 
         if (!hasPermission) {
-            return res.status(403).json({ error: 'Accès refusé' });
+            return res.status(403).render('403');
         }
 
         next();

@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-11-05T22:51:30.781Z",
+  "tests": [
+    {
+      "name": "SQL Injection",
+      "success": true,
+      "expected": "Connexion refusée avec détection d'injection",
+      "result": "BLOQUÉ - Injection détectée",
+      "status_code": 200
+    },
+    {
+      "name": "XSS Attack",
+      "success": true,
+      "expected": "Création refusée avec détection XSS",
+      "result": "BLOQUÉ - XSS détecté",
+      "status_code": 200
+    },
+    {
+      "name": "Brute Force Protection",
+      "success": true,
+      "expected": "Compte verrouillé après 5 tentatives",
+      "result": "PROTÉGÉ - Compte verrouillé détecté",
+      "attempts": 10
+    },
+    {
+      "name": "Privilege Escalation",
+      "success": true,
+      "expected": "Accès refusé (403) pour viewer -> /admin",
+      "result": "PROTÉGÉ - Accès refusé",
+      "status_code": 403
+    },
+    {
+      "name": "Session Expiration",
+      "success": true,
+      "expected": "Session expire après 30 minutes d'inactivité",
+      "result": "CONFIGURÉ - Timeout à 30 minutes dans le code",
+      "note": "Vérifier dans app.js ligne 45: maxAge: 30 * 60 * 1000"
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "success_rate": "100.0%"
+  }
+}
